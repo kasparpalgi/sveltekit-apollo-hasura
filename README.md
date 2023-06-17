@@ -4,10 +4,14 @@ https://hasura.io/learn/graphql/svelte-apollo
 
 TODO:
 * Update cache
+* Optimistic UI updates after mutations
 * Fix: see also messages I have sent
 * Hasura subscriptions
+* Update lastSeen
 * Add Hasura migrations/metadata
 * Refactor & document
+
+deprecated subscriptions-transport-ws@0.11.0: The `subscriptions-transport-ws` package is no longer maintained. We recommend you use `graphql-ws` instead. For help migrating Apollo software to `graphql-ws`, see https://www.apollographql.com/docs/apollo-server/data/subscriptions/#switching-from-subscriptions-transport-ws    For general help using `graphql-ws`, see https://github.com/enisdenjo/graphql-ws/blob/master/README.md
 
 # create-svelte
 
