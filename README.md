@@ -2,6 +2,13 @@
 
 https://hasura.io/learn/graphql/svelte-apollo
 
+TODO:
+* Update cache
+* Fix: see also messages I have sent
+* Hasura subscriptions
+* Add Hasura migrations/metadata
+* Refactor & document
+
 # create-svelte
 
 Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).

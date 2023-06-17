@@ -1,9 +1,12 @@
 <script>
 	import { ApolloClient, InMemoryCache, HttpLink, gql } from '@apollo/client/core';
-	import { setClient, query } from 'svelte-apollo';
+	import { setClient, query, mutation } from 'svelte-apollo';
 
 	const hasuraAdminSecret = 'your_hasura_admin_secret'; // Place this in ENV
 	let chatMessages;
+	let messageInput = '';
+	let senderId = 1;
+	let receiverId = 8;
 
 	$: {
 		if ($messages.data && $messages.data.chat_messages) {
@@ -49,9 +52,42 @@
 		}
 	`;
 
+	const ADD_MESSAGE = gql`
+		mutation AddMessage(
+			$sender_id: Int!
+			$receiver_id: Int
+			$group_id: Int
+			$message_text: String!
+		) {
+			insert_chat_messages_one(
+				object: {
+					sender_id: $sender_id
+					receiver_id: $receiver_id
+					group_id: $group_id
+					message_text: $message_text
+				}
+			) {
+				id
+			}
+		}
+	`;
+
 	const client = createApolloClient();
 	setClient(client);
 	const messages = query(GET_MESSAGES);
+	const addMessageMutation = mutation(ADD_MESSAGE);
+
+	async function addMessage() {
+		try {
+			await addMessageMutation({
+				variables: { sender_id: senderId, receiver_id: receiverId, message_text: messageInput },
+			});
+			console.log('Message sent');
+			messageInput = '';
+		} catch (error) {
+			console.log('Message send error');
+		}
+	}
 
 	$: console.log($messages);
 </script>
@@ -64,7 +100,7 @@
 		{#each chatMessages as message (message.date_created)}
 			<div class="chat-message">
 				<p>
-					<strong>{message.user.first_name}:</strong>
+					<strong>{message.user.first_name} said:</strong>
 					<span>{message.message_text}</span>
 				</p>
 				<p>
@@ -79,4 +115,9 @@
 	{#if $messages.error}
 		<p>Something went wrong: {$messages.error.message}</p>
 	{/if}
+	<form class="formInput" on:submit|preventDefault={addMessage}>
+		<input class="input" placeholder="Type your message…" bind:value={messageInput} />
+		<i class="inputMarker fa fa-angle-right" />
+		<button type="submit">Send</button>
+	</form>
 </div>
