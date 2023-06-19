@@ -1,15 +1,19 @@
 # SvelteKit & Hasura subscriptions with Apollo
 
-https://hasura.io/learn/graphql/svelte-apollo
+* https://youtu.be/8SCgCkHfZyQ
+* https://hasura.io/learn/graphql/svelte-apollo
+
+Add to existing SvelteKit project: `npm install --save isomorphic-ws ws @apollo/client/core graphql-ws svelte-apollo`
+
+or 
+
+Just clone and `npm install` and then add your Hasura API endpoint and admin secret to `/src/routes/susbscriptions/+page.svelte` and then `npm run dev` and subscriptions can be seen at: http://localhost:5174/subscriptions
 
 TODO:
-* Update cache
-* Optimistic UI updates after mutations
-* Fix: see also messages I have sent
-* Hasura subscriptions
+* Fix: see only messages I have sent / received
+* Send message & optimistic UI updates after mutations
 * Update lastSeen
 * Add Hasura migrations/metadata
-* Refactor & document
 
 deprecated subscriptions-transport-ws@0.11.0: The `subscriptions-transport-ws` package is no longer maintained. We recommend you use `graphql-ws` instead. For help migrating Apollo software to `graphql-ws`, see https://www.apollographql.com/docs/apollo-server/data/subscriptions/#switching-from-subscriptions-transport-ws    For general help using `graphql-ws`, see https://github.com/enisdenjo/graphql-ws/blob/master/README.md
 
