@@ -14,17 +14,17 @@
 	import { print } from 'graphql';
 	import WebSocket from 'isomorphic-ws';
 
-	const hasuraAdminSecret = 'your_hasura_admin_secret';
-	let subscription;
+	const SECRET = 'your_hasura_admin_secret';
+	const GRAPHQL_URI = 'https://api.yourdomain.com/v1/graphql';
+	const WS_URI = 'wss://api.yourdomain.com/v1/graphql';
+	const BATCH_SIZE = 10;
 
 	const cache = new InMemoryCache({
 		typePolicies: {
 			Subscription: {
 				fields: {
 					chat_messages_stream: {
-						merge(existing, incoming) {
-							return existing ? [...existing, ...incoming] : [...incoming];
-						}
+						merge: (existing = [], incoming) => [...existing, ...incoming]
 					}
 				}
 			}
@@ -32,58 +32,36 @@
 	});
 
 	const wsClient = createClient({
-		url: 'wss://api.yourdomain.com/v1/graphql',
+		url: WS_URI,
 		webSocketImpl: WebSocket,
-		connectionParams: () => ({
-			headers: {
-				'X-Hasura-Admin-Secret': hasuraAdminSecret
-			}
-		})
+		connectionParams: {
+			headers: { 'X-Hasura-Admin-Secret': SECRET }
+		}
 	});
 
 	const wsLink = new ApolloLink(
 		(operation) =>
 			new Observable((observer) => {
-				// Ensure that the query is a string
 				const { query, ...others } = operation;
-				const newOperation = {
-					query: print(query),
-					...others
-				};
-
-				const unsubscribe = wsClient.subscribe(newOperation, {
-					next: observer.next.bind(observer),
-					error: observer.error.bind(observer),
-					complete: observer.complete.bind(observer)
-				});
-
-				return () => {
-					if (unsubscribe) {
-						unsubscribe();
-					}
-				};
+				const unsubscribe = wsClient.subscribe({ query: print(query), ...others }, observer);
+				return unsubscribe;
 			})
 	);
 
-	const httpLink = new HttpLink({ uri: 'https://api.woofi.ai/v1/graphql' });
-
+	const httpLink = new HttpLink({ uri: GRAPHQL_URI });
 	const link = split(
 		({ query }) => {
-			const definition = getMainDefinition(query);
-			return definition.kind === 'OperationDefinition' && definition.operation === 'subscription';
+			const { kind, operation } = getMainDefinition(query);
+			return kind === 'OperationDefinition' && operation === 'subscription';
 		},
 		wsLink,
 		httpLink
 	);
 
-	const client = new ApolloClient({
-		link,
-		cache
-	});
-
-	const GET_CHAT_MESSAGES_SUBSCRIPTION = gql`
+	const client = new ApolloClient({ link, cache });
+	const query = gql`
 		subscription GetChatMessagesStreamingSubscription {
-			chat_messages_stream(batch_size: 10, cursor: { initial_value: { id: 0 } }) {
+			chat_messages_stream(batch_size: ${BATCH_SIZE}, cursor: { initial_value: { id: 0 } }) {
 				group_id
 				id
 				receiver_id
@@ -96,25 +74,12 @@
 	`;
 
 	let chatMessages = [];
-
-	const observable = client.subscribe({ query: GET_CHAT_MESSAGES_SUBSCRIPTION });
-
-	subscription = observable.subscribe({
-		next({ data }) {
-			if (data) {
-				chatMessages = data.chat_messages_stream;
-			}
-		},
-		error(err) {
-			console.error('Subscription error', err);
-		}
+	const subscription = client.subscribe({ query }).subscribe({
+		next: ({ data }) => data && (chatMessages = data.chat_messages_stream),
+		error: (err) => console.error('Subscription error', err)
 	});
 
-	onDestroy(() => {
-		if (subscription) {
-			subscription.unsubscribe();
-		}
-	});
+	onDestroy(() => subscription.unsubscribe());
 </script>
 
 <h1>Messages</h1>
