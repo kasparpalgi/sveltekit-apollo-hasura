@@ -1,3 +1,4 @@
+- '!include public_chat_heads.yaml'
 - '!include public_chat_messages.yaml'
 - '!include public_groups.yaml'
 - '!include public_users.yaml'

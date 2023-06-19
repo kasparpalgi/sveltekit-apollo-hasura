@@ -2,6 +2,20 @@ table:
   name: users
   schema: public
 array_relationships:
+  - name: chatHeadsBySenderId
+    using:
+      foreign_key_constraint_on:
+        column: sender_id
+        table:
+          name: chat_heads
+          schema: public
+  - name: chat_heads
+    using:
+      foreign_key_constraint_on:
+        column: receiver_id
+        table:
+          name: chat_heads
+          schema: public
   - name: chatMessagesBySenderId
     using:
       foreign_key_constraint_on:
