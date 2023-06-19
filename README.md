@@ -18,3 +18,4 @@ TODO:
 - Send message & optimistic UI updates after mutations
 - Set up DB triggers to update "chat_heads" table
 - Update lastSeen
+- Move the API calls to server side and Hasura admin secret to private ENV or just use the JWT not the Hasura admin secret and leave the API call into front-end?
