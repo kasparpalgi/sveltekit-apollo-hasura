@@ -11,7 +11,7 @@ Just clone and `npm install` and then add your Hasura API endpoint and admin sec
 
 TODO:
 * We have at the moment just all messages - want to see first the list of users I have messages with and groups I belong and when click on it then will open messages just with that user or messages in that group
-    * Create table "chat_heads" and relationships
+    * ~~Create table "chat_heads" and relationships~~
     * Subscribe to "chat_heads"
     * Make chat heads clickable
 * Send message & optimistic UI updates after mutations
