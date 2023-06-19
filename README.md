@@ -14,6 +14,6 @@ TODO:
 - We have at the moment just all messages - want to see first the list of users I have messages with and groups I belong and when click on it then will open messages just with that user or messages in that group
   - ~~Create table "chat_heads" and relationships~~
   - ~~Subscribe to "chat_heads" (query below)~~
-  - Make chat heads clickable
+  - Make chat heads clickable to open the actual chat head
 - Send message & optimistic UI updates after mutations
 - Update lastSeen
