@@ -1,0 +1,13 @@
+table:
+  name: chat_messages
+  schema: public
+object_relationships:
+  - name: group
+    using:
+      foreign_key_constraint_on: group_id
+  - name: user
+    using:
+      foreign_key_constraint_on: receiver_id
+  - name: userBySenderId
+    using:
+      foreign_key_constraint_on: sender_id

@@ -1,0 +1,25 @@
+table:
+  name: groups
+  schema: public
+object_relationships:
+  - name: directusUserByUserUpdated
+    using:
+      foreign_key_constraint_on: user_updated
+  - name: directus_user
+    using:
+      foreign_key_constraint_on: user_created
+array_relationships:
+  - name: chat_messages
+    using:
+      foreign_key_constraint_on:
+        column: group_id
+        table:
+          name: chat_messages
+          schema: public
+  - name: users_groups
+    using:
+      foreign_key_constraint_on:
+        column: groups_id
+        table:
+          name: users_groups
+          schema: public
