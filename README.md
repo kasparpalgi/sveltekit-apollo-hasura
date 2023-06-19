@@ -7,7 +7,7 @@ Add to existing SvelteKit project: `npm install --save isomorphic-ws ws @apollo/
 
 or
 
-Just clone and `npm install` and then add your Hasura API endpoint and admin secret to `/src/routes/susbscriptions/+page.svelte` and then `npm run dev` and subscriptions can be seen at: http://localhost:5174/subscriptions
+Just clone and `npm install` and then add your Hasura API endpoint and admin secret to `/src/routes/susbscriptions/+page.svelte` and then `npm run dev` and live query subscriptions for "chat_heads" can be seen at: http://localhost:5174/ and [streaming subscriptions](https://hasura.io/docs/latest/subscriptions/postgres/streaming/index/) can be seen at: http://localhost:5174/subscriptions and at https://github.com/crewnew-git/query-mutation I just tested out first a simple query and mutation with Apollo before I implemented the susbscriptions.
 
 TODO:
 
