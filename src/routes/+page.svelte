@@ -1,123 +1,127 @@
 <script>
-	import { ApolloClient, InMemoryCache, HttpLink, gql } from '@apollo/client/core';
-	import { setClient, query, mutation } from 'svelte-apollo';
+	import { createClient } from 'graphql-ws';
+	import {
+		gql,
+		ApolloClient,
+		split,
+		InMemoryCache,
+		HttpLink,
+		ApolloLink,
+		Observable
+	} from '@apollo/client/core';
+	import { getMainDefinition } from '@apollo/client/utilities';
+	import { onDestroy } from 'svelte';
+	import { print } from 'graphql';
+	import WebSocket from 'isomorphic-ws';
 
-	const hasuraAdminSecret = 'your_hasura_admin_secret'; // Place this in ENV
-	let chatMessages;
-	let messageInput = '';
-	let senderId = 1;
-	let receiverId = 8;
+	const SECRET = 'your_hasura_admin_secret';
+	const GRAPHQL_URI = 'https://api.yourdomain.com/v1/graphql';
+	const WS_URI = 'wss://api.yourdomain.com/v1/graphql';
+	const BATCH_SIZE = 10;
+	const USER_ID = 1; // Change it to your actual user id
 
-	$: {
-		if ($messages.data && $messages.data.chat_messages) {
-			chatMessages = $messages.data.chat_messages;
-		}
-	}
-
-	function createApolloClient() {
-		const link = new HttpLink({
-			uri: 'https://api.yourdomain.com/v1/graphql', // Add your Hasura endpoint
-			headers: {
-				'X-Hasura-Admin-Secret': hasuraAdminSecret
+	const cache = new InMemoryCache({
+		typePolicies: {
+			Subscription: {
+				fields: {
+					chat_heads: {
+						merge: (existing = [], incoming) => [...existing, ...incoming]
+					}
+				}
 			}
-		});
+		}
+	});
 
-		const cache = new InMemoryCache();
+	const wsClient = createClient({
+		url: WS_URI,
+		webSocketImpl: WebSocket,
+		connectionParams: {
+			headers: { 'X-Hasura-Admin-Secret': SECRET }
+		}
+	});
 
-		return new ApolloClient({
-			link,
-			cache
-		});
-	}
+	const wsLink = new ApolloLink(
+		(operation) =>
+			new Observable((observer) => {
+				const { query, ...others } = operation;
+				const unsubscribe = wsClient.subscribe({ query: print(query), ...others }, observer);
+				return unsubscribe;
+			})
+	);
 
-	const GET_MESSAGES = gql`
-		query MyMessages {
-			chat_messages(
-				where: { _or: { receiver_id: { _eq: 1 }, sender_id: { _eq: 1 } } }
+	const httpLink = new HttpLink({ uri: GRAPHQL_URI });
+	const link = split(
+		({ query }) => {
+			const { kind, operation } = getMainDefinition(query);
+			return kind === 'OperationDefinition' && operation === 'subscription';
+		},
+		wsLink,
+		httpLink
+	);
+
+	const client = new ApolloClient({ link, cache });
+
+	const GET_CHAT_MESSAGES_SUBSCRIPTION = gql`
+		subscription GetChatHeadsStreamingSubscription($user: Int!) {
+			chat_heads(
+				where: {
+					_or: [
+						{ sender_id: { _eq: $user } }
+						{ receiver_id: { _eq: $user } }
+						{ group_id: { _eq: $user } }
+					]
+				}
 				order_by: { date_created: desc }
 			) {
-				user {
-					first_name
-				}
-				userBySenderId {
-					first_name
-				}
-				group {
-					group_name
-				}
+				id
 				message_text
 				date_created
 				date_updated
-			}
-		}
-	`;
-
-	const ADD_MESSAGE = gql`
-		mutation AddMessage(
-			$sender_id: Int!
-			$receiver_id: Int
-			$group_id: Int
-			$message_text: String!
-		) {
-			insert_chat_messages_one(
-				object: {
-					sender_id: $sender_id
-					receiver_id: $receiver_id
-					group_id: $group_id
-					message_text: $message_text
+				user {
+					id
+					first_name
+					profile_pic
 				}
-			) {
-				id
+				userBySenderId {
+					id
+					first_name
+					profile_pic
+				}
+				group {
+					id
+					group_name
+					pic_url
+				}
 			}
 		}
 	`;
 
-	const client = createApolloClient();
-	setClient(client);
-	const messages = query(GET_MESSAGES);
-	const addMessageMutation = mutation(ADD_MESSAGE);
+	let chatMessages = [];
 
-	async function addMessage() {
-		try {
-			await addMessageMutation({
-				variables: { sender_id: senderId, receiver_id: receiverId, message_text: messageInput },
-			});
-			console.log('Message sent');
-			messageInput = '';
-		} catch (error) {
-			console.log('Message send error');
-		}
-	}
+	const subscription = client
+		.subscribe({ query: GET_CHAT_MESSAGES_SUBSCRIPTION, variables: { user: USER_ID } })
+		.subscribe({
+			next: ({ data }) => data && (chatMessages = data.chat_heads),
+			error: (err) => console.error('Subscription error', err)
+		});
 
-	$: console.log($messages);
+	onDestroy(() => subscription.unsubscribe());
 </script>
 
-<h1>Messages</h1>
+<h1>Chat heads</h1>
 <div class="chat-container">
-	{#if $messages.loading}
-		<p>Loading...</p>
-	{:else if chatMessages}
-		{#each chatMessages as message (message.date_created)}
-			<div class="chat-message">
-				<p>
-					<strong>{message.user.first_name} said:</strong>
-					<span>{message.message_text}</span>
-				</p>
-				<p>
-					<small>Created at: {message.date_created}</small>
-					<small>Updated at: {message.date_updated}</small>
-				</p>
-			</div>
-		{/each}
-	{:else}
-		<p>No messages found</p>
-	{/if}
-	{#if $messages.error}
-		<p>Something went wrong: {$messages.error.message}</p>
-	{/if}
-	<form class="formInput" on:submit|preventDefault={addMessage}>
-		<input class="input" placeholder="Type your message…" bind:value={messageInput} />
-		<i class="inputMarker fa fa-angle-right" />
-		<button type="submit">Send</button>
-	</form>
+	{#each chatMessages as message (message.id)}
+		<div class="chat-message">
+			<p><strong>Sender:</strong> {message.userBySenderId?.first_name}</p>
+			{#if message.user?.first_name}
+				<p><strong>Receiver:</strong> {message.user?.first_name}</p>
+			{/if}
+			{#if message.group?.group_name}
+				<p><strong>Group:</strong> {message.group?.group_name}</p>
+			{/if}
+			<p><strong>Message:</strong> {message.message_text}</p>
+			<p><strong>Date created:</strong> {message.date_created}</p>
+			<p><strong>Date updated:</strong> {message.date_updated}</p>
+		</div>
+	{/each}
 </div>

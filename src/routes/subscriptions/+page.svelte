@@ -105,7 +105,7 @@
 	onDestroy(() => subscription.unsubscribe());
 </script>
 
-<h1>Messages</h1>
+<h1>All messages</h1>
 <div class="chat-container">
 	{#each chatMessages as message (message.id)}
 		<div class="chat-message">
