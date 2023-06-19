@@ -16,4 +16,5 @@ TODO:
   - ~~Subscribe to "chat_heads" (query below)~~
   - Make chat heads clickable to open the actual chat head
 - Send message & optimistic UI updates after mutations
+- Set up DB triggers to update "chat_heads" table
 - Update lastSeen
